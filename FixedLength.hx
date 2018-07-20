@@ -7,7 +7,7 @@ using haxe.macro.TypeTools;
 
 // typedef FixedString <@:const Length:Int> = FixedLength <Length, String>;
 
-abstract FixedLength <@:const Length:Int /*, T */> (Bytes /* T */)
+abstract FixedLength <@:const Length:Int /*, T */> (Bytes /* T */) to Bytes
 {
 	@:from static public macro function from (str : ExprOf<Bytes>) : Expr return fixedLengthCast(str);
 	static public macro function fixedLength (str : ExprOf<Bytes>, length:Int) : Expr return fixedLengthCast(str, length);
@@ -37,7 +37,7 @@ abstract FixedLength <@:const Length:Int /*, T */> (Bytes /* T */)
 		var expr = macro {
 			var str:Bytes = $str;
 			if (str.length > $v{length}) $throwError;
-			else cast(str, $returnType);
+			else { var ret:$returnType = untyped str; ret; }
 		}
 		expr.pos = Context.currentPos();
 		return expr;
