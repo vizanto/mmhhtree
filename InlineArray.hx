@@ -6,15 +6,17 @@ import haxe.macro.Expr;
 import haxe.macro.TypeTools;
 
 #if !macro @:genericBuild(InlineArrayBuilder.build()) #end
-extern interface InlineArray<T> extends IInlineArray<T> {
+// extern interface InlineArray<T> extends IInlineArray<T> {
+// }
+class InlineArray<T> {
 }
 
-interface IInlineArray<T> {
+interface InlineArrayAPI<T> {
     public function get (index : Int) : Dynamic;
 
     public function stride () : Int;
     public function sizeOf () : Int;
-    public function slice  (from : Int, until : Int) : IInlineArray<T>;
+    public function slice  (from : Int, until : Int) : InlineArray<T>;
 }
 
 class ReadOnlyBufferSlice
@@ -30,14 +32,19 @@ class ReadOnlyBufferSlice
         this.length = length;
     }
 }
+/*
+class SliceArrayView <T> extends ReadOnlyBufferSlice implements IInlineArray<T> {
+}
 
-//extern class InlineArray <T> extends ReadOnlyBufferSlice implements IInlineArray {
-//}
+abstract InlineArray <T> (SliceArrayView<T>) {
 
-// abstract InlineArray <T> (T) from SliceArrayView <T> to SliceArrayView <T> {
-//     public inline new (buffer,offset,length) new SliceArrayView<T>(buffer,offset,length);
-//     @:arrayAccess public inline function get (index:Int) return this.get(index);
-// }
+    static public macro function array <T> (itemType:T, buffer:) : ExprOf<SliceArrayView<T>> {
+        trace(expr);
+        return macro null;
+    }
+
+    @:arrayAccess public inline function get (index:Int) return this.get(index);
+}
 
 /*
 class InlineArray <T>
