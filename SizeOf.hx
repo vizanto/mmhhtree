@@ -11,19 +11,23 @@ class SizeOf_Type
 {
     static public function sizeOf (T:haxe.macro.Type)
     {
-        var name = TypeTools.toString(T);
+        // trace(T);
+        var name = TypeTools.toString(T).split("<")[0];
         return switch name {
             case "Byte"       : 1;
             case "Int"        : 4;
             case "haxe.Int32" : 4;
             case "haxe.Int64" : 8;
+            case "FixedLength":
+                FixedLength.parameters(T).length;
+
             case unknown:
                 var next = TypeTools.followWithAbstracts(T, true);
-                trace("Nope: " + T + ". next: " + next);
+                // trace("Nope: " + name + " => " + T + ". next: " + next);
                 if (TypeTools.toString(next) == name)
                     Context.error("No known fixed byte size for type: " + unknown, (macro this).pos);
                 else
-                    trace("Nope: " + T);
+                    // trace("Nope: " + T);
                     sizeOf(next);
         }
     }

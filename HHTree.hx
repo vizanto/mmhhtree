@@ -5,12 +5,14 @@ import haxe.Int32;
 import haxe.Int64;
 import haxe.io.ArrayBufferView;
 import haxe.macro.Expr;
+using FixedLength;
 
 ///////////////////////////////////////
 
 class HHTree {
 #if !macro
     static public function main() {
+        var t : InlineArray<FixedLength<16>>;
         trace("HH");
         // trace("1  => " + Util.pad64(1));
         // trace("2  => " + Util.pad64(2));
@@ -27,10 +29,12 @@ class HHTree {
         // trace("65 => " + Util.pad64(65));
         // trace("66 => " + Util.pad64(66));
         #if java
+        var s : FixedLength<16> = java.nio.ByteBuffer.allocate(16);
         var m = java.nio.ByteBuffer.allocate(1024);
         m.order(java.nio.ByteOrder.LITTLE_ENDIAN);
         for (i in 0 ... 100) m.putLong(1+i);
         #else
+        var s : FixedLength<16> = haxe.io.Bytes.alloc(16);
         var m = haxe.io.Bytes.alloc(1024);
         for (i in 0 ... 100) m.setInt64(i*8, 1+i);
         #end
