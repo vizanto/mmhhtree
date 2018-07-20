@@ -6,17 +6,14 @@ import haxe.macro.Expr;
 import haxe.macro.TypeTools;
 
 #if !macro @:genericBuild(InlineArrayBuilder.build()) #end
-// extern interface InlineArray<T> extends IInlineArray<T> {
-// }
-class InlineArray<T> {
-}
+extern interface InlineArray <T> extends InlineArrayAPI <T> {}
 
-interface InlineArrayAPI<T> {
-    public function get (index : Int) : Dynamic;
-
+interface InlineArrayAPI <T>
+{
+    public function get (index : Int) : T;
     public function stride () : Int;
     public function sizeOf () : Int;
-    public function slice  (from : Int, until : Int) : InlineArray<T>;
+    public function slice  (from : Int, until : Int) : InlineArrayAPI<T>;
 }
 
 class ReadOnlyBufferSlice
