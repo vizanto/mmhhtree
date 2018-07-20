@@ -28,28 +28,54 @@ class InlineArrayBuilder
         }
         var fakeGetCall = macro { var offset = 0, buffer:Bytes = null, index = 0; $getter; };
         var type_T = TypeTools.toComplexType(Context.typeof(fakeGetCall));
-
-        var sizeOf = macro this.length * $v{itemSize};
         var self : TypePath = {name:name, pack:[]};
+        var type_self = TPath(self);
+        var a_name = "A" + name;
+        var a_self : TypePath = {name:a_name, pack:self.pack};
+        var type_a_self = TPath(a_self);
+        var sizeOf = macro length * $v{itemSize};
         var def = macro class $name extends InlineArray.ReadOnlyBufferSlice implements InlineArray.InlineArrayAPI<$type_T>
         {
             inline public function new (buffer, offset, length) super(buffer, offset, length);
 
             @:pure inline public function get    (index:Int)  return $getter;
-            @:pure inline public function stride ()           return $v{itemSize};
-            @:pure inline public function sizeOf ()           return $sizeOf;
-            @:pure inline public function slice  (index, end) return new $self(this.buffer, $i, end);
             @:pure inline public function nth    (index:Int)  return this.get(index);
 
-            inline public function bytes () return (this.buffer).sub(this.offset, $sizeOf);
+            public var array (get,never) : $type_a_self;
+            @:pure inline public function get_array () return this;
+
+            public var bytes (get,never) : ReadOnlyMemory;
+            inline public function get_bytes () return new ReadOnlyMemory(buffer).sub(this.offset, $sizeOf);
+
+            public var stride (get,never) : Int;
+            @:pure inline public function get_stride () return $v{itemSize};
+
+            public var sizeOf (get,never) : Int;
+            @:pure inline public function get_sizeOf () return $sizeOf;
+
+            public inline function iterator () return new InlineArray.InlineArrayIterator<$type_T, $type_self>(this);
+
+            inline public function slice (start:Int, end:Int) {
+                var index = InlineArray.InlineArrayAccess.clampStart(start, this.length);
+                var end = InlineArray.InlineArrayAccess.clampEnd(index, end, this.length);
+                return new $self(new ReadOnlyMemory(buffer), $i, end);
+            }
         }
-
+        def.meta.push({name: ":final", pos: def.pos});
         haxe.macro.Context.defineType(def);
-        // trace("Defined subclass");
-        var nt = Context.typeof(macro new $self(null,0,0));
-        // trace("Got type of new class: " + nt);
-
-        return self;
+        var abs = macro class $a_name {
+            inline public function new (buffer, offset, length)
+                this = new $self(buffer,offset,length);
+            @:arrayAccess inline public function get (index:Int)
+                return this.get(index);
+            @:arrayAccess inline public function range (range:IntIterator) {
+                return this.slice(@:privateAccess range.min, @:privateAccess range.max);
+            }
+        }
+        abs.kind = TDAbstract(type_self, [type_self], [type_self]);
+        abs.meta = [{name: ":forward", params: [macro array, macro bytes, macro length, macro stride, macro sizeOf], pos: def.pos}];
+        haxe.macro.Context.defineType(abs);
+        return {type_T: type_T, abst: a_self, self: self};
     }
 
     static public function build () : ComplexType
@@ -71,9 +97,8 @@ class InlineArrayBuilder
                 }
                 // Define type
                 var name = '${n}_${itemSize}';
-                var tp = buildClass(name, itemSize);
+                var cl = buildClass(name, itemSize), ct = TPath(cl.abst), type_T = cl.type_T;
                 // Return Type path
-                var ct = TPath(tp);
                 typeMap.set(itemSize, ct);
                 return ct;
 

@@ -10,11 +10,55 @@ extern interface InlineArray <T> extends InlineArrayAPI <T> {}
 
 interface InlineArrayAPI <T>
 {
+    public var bytes  (get,never) : ReadOnlyMemory;
+    public var length (default,null) : Int;
+    public var stride (get,never) : Int;
+    public var sizeOf (get,never) : Int;
+
     public function nth    (index : Int) : T;
-    public function stride () : Int;
-    public function sizeOf () : Int;
     public function slice  (from : Int, until : Int) : InlineArrayAPI<T>;
 }
+
+@:forward(bytes,length,stride,sizeOf,slice)
+abstract InlineArrayAccess <T,U:InlineArrayAPI<T>> (U) from U to U
+{
+    @:arrayAccess inline public function nth (index:Int) : T return this.nth(index);
+    inline public function iterator () return new InlineArrayIterator<T,U>(this);
+
+    public static inline function clampStart (index,length) {
+        // trace("index = " + index + " length = " + length);
+        if (index < 0) index = length + index;
+        else if (index > length) index = length;
+        // trace("index after = " + index);
+        return index;
+    }
+    public static inline function clampEnd (index,end,length) {
+        // trace("end = " + end);
+        end = if (end >= 0) (end > length? length : end) - index; else length - index + end;
+        // trace("end mid = " + end);
+        if (end < 0) end = 0;
+        // trace("end after = " + end);
+        return end;
+    }
+}
+
+@:final class InlineArrayIterator<T,U:InlineArrayAPI<T>>
+{
+	final arr : U;
+	final len : Int;
+	var i : Int;
+
+	public inline function new (a:U)
+	{
+		arr = a;
+		len = a.length;
+		i = 0;
+	}
+
+	public inline function hasNext () : Bool return i < len;
+	public inline function next () : T return arr.nth(i++);
+}
+
 
 class ReadOnlyBufferSlice
 {
