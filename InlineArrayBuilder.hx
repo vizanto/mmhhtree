@@ -39,6 +39,7 @@ class InlineArrayBuilder
             @:pure inline public function stride ()           return $v{itemSize};
             @:pure inline public function sizeOf ()           return $sizeOf;
             @:pure inline public function slice  (index, end) return new $self(this.buffer, $i, end);
+            @:pure inline public function nth    (index:Int)  return this.get(index);
 
             inline public function bytes () return (this.buffer).sub(this.offset, $sizeOf);
         }

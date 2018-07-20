@@ -10,7 +10,7 @@ extern interface InlineArray <T> extends InlineArrayAPI <T> {}
 
 interface InlineArrayAPI <T>
 {
-    public function get (index : Int) : T;
+    public function nth    (index : Int) : T;
     public function stride () : Int;
     public function sizeOf () : Int;
     public function slice  (from : Int, until : Int) : InlineArrayAPI<T>;
