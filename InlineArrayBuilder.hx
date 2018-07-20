@@ -33,7 +33,11 @@ class InlineArrayBuilder
         var a_name = "A" + name;
         var a_self : TypePath = {name:a_name, pack:self.pack};
         var type_a_self = TPath(a_self);
+        var iter_name = name + "_Iterator";
+        var iter_self : TypePath = {name:iter_name, pack:self.pack};
+        var type_iter_self = TPath(iter_self);
         var sizeOf = macro length * $v{itemSize};
+
         var def = macro class $name extends InlineArray.ReadOnlyBufferSlice implements InlineArray.InlineArrayAPI<$type_T>
         {
             inline public function new (buffer, offset, length) super(buffer, offset, length);
@@ -53,28 +57,36 @@ class InlineArrayBuilder
             public var sizeOf (get,never) : Int;
             @:pure inline public function get_sizeOf () return $sizeOf;
 
-            public inline function iterator () return new InlineArray.InlineArrayIterator<$type_T, $type_self>(this);
+            public inline function iterator () return new $iter_self(this, this.length);
 
             inline public function slice (start:Int, end:Int) {
-                var index = InlineArray.InlineArrayAccess.clampStart(start, this.length);
-                var end = InlineArray.InlineArrayAccess.clampEnd(index, end, this.length);
+                var index = InlineArray.InlineArraySlice.clampStart(start, this.length);
+                var end = InlineArray.InlineArraySlice.clampEnd(index, end, this.length);
                 return new $self(new ReadOnlyMemory(buffer), $i, end);
             }
         }
         def.meta.push({name: ":final", pos: def.pos});
         haxe.macro.Context.defineType(def);
+
+        var iter = macro class $iter_name extends InlineArray.InlineArrayIteratorBase<$type_self> {
+            public inline function new (a : $type_self, length : Int) super(a, length);
+        	public inline function next () : $type_T return arr.get(i++);
+        }
+        iter.meta.push({name: ":final", pos: iter.pos});
+        haxe.macro.Context.defineType(iter);
+
         var abs = macro class $a_name {
             inline public function new (buffer, offset, length)
                 this = new $self(buffer,offset,length);
-            @:arrayAccess inline public function get (index:Int)
+            @:arrayAccess inline public function get (index:Int) : $type_T
                 return this.get(index);
-            @:arrayAccess inline public function range (range:IntIterator) {
+            @:arrayAccess inline public function range (range:IntIterator)
                 return this.slice(@:privateAccess range.min, @:privateAccess range.max);
-            }
         }
         abs.kind = TDAbstract(type_self, [type_self], [type_self]);
-        abs.meta = [{name: ":forward", params: [macro array, macro bytes, macro length, macro stride, macro sizeOf], pos: def.pos}];
+        abs.meta = [{name: ":forward", params: [macro array, macro bytes, macro iterator, macro length, macro slice,  macro stride, macro sizeOf], pos: def.pos}];
         haxe.macro.Context.defineType(abs);
+
         return {type_T: type_T, abst: a_self, self: self};
     }
 

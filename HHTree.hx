@@ -39,8 +39,8 @@ class HHTree {
         var m = haxe.io.Bytes.alloc(1024);
         for (i in 0 ... 100) m.setInt64(i*8, 1+i);
         #end
-        var a : InlineArray<Int64> = new InlineArray<Int64>(new ReadOnlyMemory(m), 16, 100);
-/*        trace("size = " + a.sizeOf);
+        var a = new InlineArray<Int64>(new ReadOnlyMemory(m), 16, 100);
+        trace("size = " + a.sizeOf);
         trace("stride = " + a.stride);
         trace("0 = " + m.get(0) + " " + m.get(1) + " " + m.get(2) + " " + m.get(3) + " " + m.get(4) + " " + m.get(5) + " " + m.get(6) + " " + m.get(7));
         trace("1 = " + a.get(0) + " " + a.get(1) + " " + a.get(2) + " " + a.get(3) + " " + a.get(4) + " " + a.get(5) + " " + a.get(6) + " " + a.get(7));
@@ -48,16 +48,16 @@ class HHTree {
         trace("2 = " + a.bytes);
         trace("3 = " + a.bytes.sub(0, 8).get(7));
         trace("4 = " + a.slice(10, 90).get(0));
-*/        // var a = a.array;
-        // trace("length = " + a.length);
-        // for (i in 90 ... a.length) {
-        //     trace("array = a["+i+"]" + a[i]);
-        // }
+        var a = a.array;
+        trace("length = " + a.length);
+        for (i in 90 ... a.length) {
+            trace("array = a["+i+"]" + a[i]);
+        }
         // for (a in a) trace(a);
         var slice = a[10...13];
         trace(slice.length);
-        var iter = slice.iterator();
-        for (i in iter) trace("array item = " + i);
+        for (i in slice) trace("slice1 item = " + i);
+        for (i in a[-2...999]) trace("slice2 item = " + i);
     }
 #end
 }
