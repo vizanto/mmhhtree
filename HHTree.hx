@@ -48,7 +48,6 @@ class HHTree {
         trace("2 = " + a.bytes);
         trace("3 = " + a.bytes.sub(0, 8).get(7));
         trace("4 = " + a.slice(10, 90).get(0));
-        var a = a.array;
         trace("length = " + a.length);
         for (i in 90 ... a.length) {
             trace("array = a["+i+"]" + a[i]);

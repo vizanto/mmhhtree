@@ -40,6 +40,7 @@ class InlineArrayBuilder
 
         var def = macro class $name extends InlineArray.ReadOnlyBufferSlice implements InlineArray.InlineArrayAPI<$type_T>
         {
+            // the `inline` part of `inline new` is not inherited from super class
             inline public function new (buffer, offset, length) super(buffer, offset, length);
 
             @:pure inline public function get    (index:Int)  return $getter;
@@ -69,6 +70,7 @@ class InlineArrayBuilder
         haxe.macro.Context.defineType(def);
 
         var iter = macro class $iter_name extends InlineArray.InlineArrayIteratorBase<$type_self> {
+            // the `inline` part of `inline new` is not inherited from super class
             public inline function new (a : $type_self, length : Int) super(a, length);
         	public inline function next () : $type_T return arr.get(i++);
         }
@@ -76,6 +78,7 @@ class InlineArrayBuilder
         haxe.macro.Context.defineType(iter);
 
         var abs = macro class $a_name {
+            // the `inline` part of `inline new` is not inherited from super class
             inline public function new (buffer, offset, length)
                 this = new $self(buffer,offset,length);
             @:arrayAccess inline public function get (index:Int) : $type_T
@@ -84,7 +87,7 @@ class InlineArrayBuilder
                 return this.slice(@:privateAccess range.min, @:privateAccess range.max);
         }
         abs.kind = TDAbstract(type_self, [type_self], [type_self]);
-        abs.meta = [{name: ":forward", params: [macro array, macro bytes, macro iterator, macro length, macro slice,  macro stride, macro sizeOf], pos: def.pos}];
+        abs.meta = [{name: ":forward", params: [macro bytes, macro iterator, macro length, macro slice, macro stride, macro sizeOf], pos: def.pos}];
         haxe.macro.Context.defineType(abs);
 
         return {type_T: type_T, abst: a_self, self: self};
