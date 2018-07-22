@@ -41,7 +41,7 @@ class HHTree {
         #end
         var a = new InlineArray<Int64>(new ReadOnlyMemory(m), 16, 100);
         trace("size = " + a.sizeOf);
-        trace("stride = " + a.stride);
+        trace("stride = " + a.sizeAt(0));
         trace("0 = " + m.get(0) + " " + m.get(1) + " " + m.get(2) + " " + m.get(3) + " " + m.get(4) + " " + m.get(5) + " " + m.get(6) + " " + m.get(7));
         trace("1 = " + a.get(0) + " " + a.get(1) + " " + a.get(2) + " " + a.get(3) + " " + a.get(4) + " " + a.get(5) + " " + a.get(6) + " " + a.get(7));
         trace("bytes = " + m);

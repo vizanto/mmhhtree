@@ -17,7 +17,8 @@ class InlineArrayBuilder
 
     static private function buildClass(name, itemSize:Int)
     {
-        var i = macro offset + $v{itemSize} * index;
+        var stride = macro PositiveInt.unsafeCast($v{itemSize});
+        var i = macro offset + $stride * index;
         var getter = switch itemSize {
             // (buffer) wrapped in parens is done here to help Haxe with inline new:
             case 1: macro (buffer).get      ($i);
@@ -36,29 +37,30 @@ class InlineArrayBuilder
         var iter_name = name + "_Iterator";
         var iter_self : TypePath = {name:iter_name, pack:self.pack};
         var type_iter_self = TPath(iter_self);
-        var sizeOf = macro length * $v{itemSize};
+        var sizeOf = macro length * $stride;
 
         var def = macro class $name extends InlineArray.ReadOnlyBufferSlice implements InlineArray.InlineArrayAPI<$type_T>
         {
             // the `inline` part of `inline new` is not inherited from super class
             inline public function new (buffer, offset, length) super(buffer, offset, length);
 
-            @:pure inline public function get    (index:Int)  return $getter;
-            @:pure inline public function nth    (index:Int)  return this.get(index);
+            @:pure inline public function get (index:PositiveInt) : $type_T
+                if (index < length) return $getter; else throw HHTreeError.outOfArrayBounds;
+
+            @:pure inline public function nth (index:Int) return this.get(index);
 
             public var array (get,never) : $type_a_self;
-            @:pure inline public function get_array () return this;
+            @:pure inline function get_array () return this;
 
             public var bytes (get,never) : ReadOnlyMemory;
-            inline public function get_bytes () return new ReadOnlyMemory(buffer).sub(this.offset, $sizeOf);
+            inline function get_bytes () return new ReadOnlyMemory(buffer).sub(this.offset, $sizeOf);
 
-            public var stride (get,never) : Int;
-            @:pure inline public function get_stride () return $v{itemSize};
-
-            public var sizeOf (get,never) : Int;
-            @:pure inline public function get_sizeOf () return $sizeOf;
+            public var sizeOf (get,never) : PositiveInt;
+            @:pure inline function get_sizeOf () return PositiveInt.unsafeCast($sizeOf);
 
             public inline function iterator () return new $iter_self(this, this.length);
+
+            @:pure inline public function sizeAt (index:PositiveInt) : PositiveInt return $stride;
 
             inline public function slice (start:Int, end:Int) {
                 var index = InlineArray.InlineArraySlice.clampStart(start, this.length);
@@ -72,7 +74,7 @@ class InlineArrayBuilder
         var iter = macro class $iter_name extends InlineArray.InlineArrayIteratorBase<$type_self> {
             // the `inline` part of `inline new` is not inherited from super class
             public inline function new (a : $type_self, length : Int) super(a, length);
-        	public inline function next () : $type_T return arr.get(i++);
+        	public inline function next () : $type_T return arr.get(PositiveInt.unsafeCast(i++));
         }
         iter.meta.push({name: ":final", pos: iter.pos});
         haxe.macro.Context.defineType(iter);
@@ -81,13 +83,15 @@ class InlineArrayBuilder
             // the `inline` part of `inline new` is not inherited from super class
             inline public function new (buffer, offset, length)
                 this = new $self(buffer,offset,length);
-            @:arrayAccess inline public function get (index:Int) : $type_T
+            @:arrayAccess inline public function get (index:PositiveInt) : $type_T
                 return this.get(index);
+            @:arrayAccess inline public function nth (index:Int) : $type_T
+                return this.nth(index);
             @:arrayAccess inline public function range (range:IntIterator)
                 return this.slice(@:privateAccess range.min, @:privateAccess range.max);
         }
         abs.kind = TDAbstract(type_self, [type_self], [type_self]);
-        abs.meta = [{name: ":forward", params: [macro bytes, macro iterator, macro length, macro slice, macro stride, macro sizeOf], pos: def.pos}];
+        abs.meta = [{name: ":forward", params: [macro bytes, macro iterator, macro length, macro slice, macro sizeAt, macro sizeOf], pos: def.pos}];
         haxe.macro.Context.defineType(abs);
 
         return {type_T: type_T, abst: a_self, self: self};
