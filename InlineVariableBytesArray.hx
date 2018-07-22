@@ -1,6 +1,7 @@
 package;
 import InlineArray.InlineArrayAPI;
 import InlineArray.InlineArraySlice.*;
+import InlineArray.VariableSizeItems;
 import InlineArray.ReadOnlyBufferSlice;
 import InlineArray.ReadOnlyBufferSlice.pad64;
 
@@ -12,19 +13,31 @@ import InlineArray.ReadOnlyBufferSlice.pad64;
 /**
  * 64-byte padded variable length values (bytes)
  */
-class InlineVariableBytesArray extends ReadOnlyBufferSlice implements InlineArrayAPI<ReadOnlyMemory>
+class InlineVariableBytesArray extends ReadOnlyBufferSlice implements VariableSizeItems
 {
-    // the `inline` part of `inline new` is not inherited from super class
-    public inline function new(buffer, offset, length) super(buffer, offset, length);
+    /**
+     * index array of 32-bit offsets
+     */
+    static inline var stride = 4;
 
-    public var bytes (get,never) : ReadOnlyMemory;
-    inline function get_bytes () return new ReadOnlyMemory(buffer).sub(offset, sizeOf);
+    final valueBytesOffset : PositiveInt;
+
+    public inline function new(buffer, indexOffset, length, valueBytesOffset) {
+        super(buffer, indexOffset, length);
+        this.valueBytesOffset = valueBytesOffset;
+    }
+
+    public var itemsBytes (get,never) : ReadOnlyMemory;
+    inline function get_itemsBytes () return new ReadOnlyMemory(buffer).sub(valueBytesOffset, sizeOfValues);
 
     public var sizeOf (get,never) : PositiveInt;
-    @:pure public inline function get_sizeOf () return valueBytesOffset + pad64(getValueOffset(length));
+    @:pure public inline function get_sizeOf () return sizeOfIndex + sizeOfValues;
 
-    public var valueBytesOffset (get,never) : PositiveInt;
-    @:pure public inline function get_valueBytesOffset () return offset + pad64(length + 1);
+    public var sizeOfIndex (get,never) : PositiveInt;
+    @:pure public inline function get_sizeOfIndex () return length * stride;
+
+    public var sizeOfValues (get,never) : PositiveInt;
+    @:pure public inline function get_sizeOfValues () return PositiveInt.unsafeCast(getValueOffset(length) - getValueOffset(0));
 
     /**
      * Get the relative position of the first byte of a value.
@@ -32,23 +45,28 @@ class InlineVariableBytesArray extends ReadOnlyBufferSlice implements InlineArra
      * @return position relative to valueBytesOffset
      */
     @:pure public inline function getValueOffset (index:PositiveInt) : PositiveInt
-        return PositiveInt.unsafeCast(buffer.getInt32(offset + index));
+        return PositiveInt.unsafeCast(buffer.getInt32(offset + index * stride));
 
-    @:pure inline private function get (index:PositiveInt)  {
+    @:pure inline public function get (index:PositiveInt) {
         if (index > length) throw HHTreeError.outOfSegmentBounds;
         var valueStart = getValueOffset(index);
         var valueEnd   = getValueOffset(index + 1);
-        return buffer.sub(valueBytesOffset + valueStart, valueEnd - valueStart);
+        var valueSlice = getValueOffset(0);
+        // trace('index = ${index}, valueSlice = ${valueSlice}, valueStart = ${valueStart}, valueEnd = ${valueEnd}');
+        return buffer.sub(valueBytesOffset - valueSlice + valueStart, valueEnd - valueStart);
     }
 
-    @:pure inline public function nth    (index:Int) return this.get(index);
+    @:pure inline public function nth (index:Int) return this.get(index);
 
     @:pure public inline function sizeAt (index:PositiveInt) : PositiveInt
         return PositiveInt.unsafeCast(getValueOffset(index+1) - getValueOffset(index));
 
-    inline public function slice (start:Int, end:Int) {
+    inline public function slice (start:Int, end:Int)
+    {
         var index = clampStart(start, this.length);
         var end = clampEnd(index, end, this.length);
-        return null ;// new InlineVariableBytesArray(new ReadOnlyMemory(buffer), $i, end); // <== SHIT
+        var valueOffset = this.valueBytesOffset + getValueOffset(index);
+        // trace('index = ${index}, end = ${end}, valueOffset = ${valueOffset}');
+        return new InlineVariableBytesArray(new ReadOnlyMemory(buffer), index * stride, end, valueOffset);
     }
 }

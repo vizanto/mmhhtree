@@ -34,19 +34,25 @@ class HHTree {
         var m = java.nio.ByteBuffer.allocate(1024);
         m.order(java.nio.ByteOrder.LITTLE_ENDIAN);
         for (i in 0 ... 100) m.putLong(1+i);
+        var m2 = java.nio.ByteBuffer.allocate(1024);
+        m2.order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        for (i in 0 ... 100) m2.putInt(i);
         #else
         // var s : FixedLength<16> = haxe.io.Bytes.alloc(16);
         var m = haxe.io.Bytes.alloc(1024);
         for (i in 0 ... 100) m.setInt64(i*8, 1+i);
+        var m2 = haxe.io.Bytes.alloc(1024);
+        for (i in 0 ... 100) m2.setInt32(i*4, i*3);
+        for (i in 100 ... 200) m2.set(i, i);
         #end
         var a = new InlineArray<Int64>(new ReadOnlyMemory(m), 16, 100);
         trace("size = " + a.sizeOf);
-        trace("stride = " + a.sizeAt(0));
+        trace("stride = " + a.stride);
         trace("0 = " + m.get(0) + " " + m.get(1) + " " + m.get(2) + " " + m.get(3) + " " + m.get(4) + " " + m.get(5) + " " + m.get(6) + " " + m.get(7));
         trace("1 = " + a.get(0) + " " + a.get(1) + " " + a.get(2) + " " + a.get(3) + " " + a.get(4) + " " + a.get(5) + " " + a.get(6) + " " + a.get(7));
         trace("bytes = " + m);
-        trace("2 = " + a.bytes);
-        trace("3 = " + a.bytes.sub(0, 8).get(7));
+        trace("2 = " + a.itemsBytes);
+        trace("3 = " + a.itemsBytes.sub(0, 8).get(7));
         trace("4 = " + a.slice(10, 90).get(0));
         trace("length = " + a.length);
         for (i in 90 ... a.length) {
@@ -57,6 +63,15 @@ class HHTree {
         trace(slice.length);
         for (i in slice) trace("slice1 item = " + i);
         for (i in a[-2...999]) trace("slice2 item = " + i);
+
+        var b = new InlineVariableBytesArray(new ReadOnlyMemory(m2), 0, 99, 100);
+        trace("sizeOf = " + b.sizeOf);
+        trace("sizeOf = " + b.sizeOfIndex);
+        trace("sizeOf = " + b.sizeOfValues + ", " + b.itemsBytes.length);
+        trace("sizeOf = " + b.slice(4,99).sizeOfValues + ", " + b.slice(4,99).itemsBytes.length);
+        for (i in 0 ... 5) trace("b[" + i + "] = " + b.get(i));
+        for (i in 0 ... 5) trace("b[" + i + "] = " + b.slice(4,10).get(i));
+        // trace("b slice = " + b[0 ... 5]);
     }
 #end
 }

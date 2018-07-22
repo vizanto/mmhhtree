@@ -1,7 +1,7 @@
 package;
 import io.Bytes;
 
-@:forward(get, getInt32, getInt64)
+@:forward(get, getInt32, getInt64, length)
 abstract ReadOnlyMemory (Bytes) to Bytes
 {
     inline public function new (buffer : Bytes)

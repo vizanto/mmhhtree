@@ -39,7 +39,7 @@ class InlineArrayBuilder
         var type_iter_self = TPath(iter_self);
         var sizeOf = macro length * $stride;
 
-        var def = macro class $name extends InlineArray.ReadOnlyBufferSlice implements InlineArray.InlineArrayAPI<$type_T>
+        var def = macro class $name extends InlineArray.ReadOnlyBufferSlice implements InlineArray.FixedSizeItems<$type_T>
         {
             // the `inline` part of `inline new` is not inherited from super class
             inline public function new (buffer, offset, length) super(buffer, offset, length);
@@ -52,15 +52,16 @@ class InlineArrayBuilder
             public var array (get,never) : $type_a_self;
             @:pure inline function get_array () return this;
 
-            public var bytes (get,never) : ReadOnlyMemory;
-            inline function get_bytes () return new ReadOnlyMemory(buffer).sub(this.offset, $sizeOf);
+            public var itemsBytes (get,never) : ReadOnlyMemory;
+            inline function get_itemsBytes () return new ReadOnlyMemory(buffer).sub(this.offset, $sizeOf);
 
             public var sizeOf (get,never) : PositiveInt;
             @:pure inline function get_sizeOf () return PositiveInt.unsafeCast($sizeOf);
 
             public inline function iterator () return new $iter_self(this, this.length);
 
-            @:pure inline public function sizeAt (index:PositiveInt) : PositiveInt return $stride;
+            public var stride (get,never) : PositiveInt;
+            @:pure inline public function get_stride () : PositiveInt return $stride;
 
             inline public function slice (start:Int, end:Int) {
                 var index = InlineArray.InlineArraySlice.clampStart(start, this.length);
@@ -91,7 +92,7 @@ class InlineArrayBuilder
                 return this.slice(@:privateAccess range.min, @:privateAccess range.max);
         }
         abs.kind = TDAbstract(type_self, [type_self], [type_self]);
-        abs.meta = [{name: ":forward", params: [macro bytes, macro iterator, macro length, macro slice, macro sizeAt, macro sizeOf], pos: def.pos}];
+        abs.meta = [{name: ":forward", params: [macro itemsBytes, macro iterator, macro length, macro slice, macro stride, macro sizeOf], pos: def.pos}];
         haxe.macro.Context.defineType(abs);
 
         return {type_T: type_T, abst: a_self, self: self};

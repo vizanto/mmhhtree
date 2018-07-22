@@ -10,13 +10,26 @@ extern interface InlineArray <T> extends InlineArrayAPI <T> {}
 
 interface InlineArrayAPI <T>
 {
-    public var bytes  (get,never) : ReadOnlyMemory;
+    public var itemsBytes (get,never) : ReadOnlyMemory;
     public var length (default,null) : PositiveInt;
     public var sizeOf (get,never) : PositiveInt;
 
     public function nth    (index : Int) : T;
-    public function sizeAt (index : PositiveInt) : PositiveInt;
     public function slice  (start : Int, end : Int) : InlineArrayAPI<T>;
+}
+
+interface FixedSizeItems <T> extends InlineArrayAPI <T>
+{
+    public var stride (get,never) : PositiveInt;
+}
+
+interface VariableSizeItems extends InlineArrayAPI <ReadOnlyMemory>
+{
+    public var sizeOfIndex (get,never) : PositiveInt;
+    public var sizeOfValues (get,never) : PositiveInt;
+
+    public function sizeAt (index : PositiveInt) : PositiveInt;
+    public function slice  (start : Int, end : Int) : VariableSizeItems;
 }
 
 class ReadOnlyBufferSlice
