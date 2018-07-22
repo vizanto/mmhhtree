@@ -17,7 +17,7 @@ class InlineArrayBuilder
 
     static private function buildClass(name, itemSize:Int)
     {
-        var stride = macro PositiveInt.unsafeCast($v{itemSize});
+        var stride = macro PositiveInt.safeCast($v{itemSize});
         var i = macro offset + $stride * index;
         var getter = switch itemSize {
             // (buffer) wrapped in parens is done here to help Haxe with inline new:
