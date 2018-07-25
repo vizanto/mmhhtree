@@ -16,7 +16,7 @@ abstract PositiveInt (Int) to Int
 
 	static public #if !debug inline #end function unsafeCast (knownPositiveInt : Int) : PositiveInt {
 		#if debug
-		if (knownPositiveInt < 0) throw "BUG: knownPositiveInt = " + knownPositiveInt + ", but should be > 0";
+		if (knownPositiveInt < 0) throw "BUG: knownPositiveInt = " + knownPositiveInt + ", but should be >= 0";
 		#end
 		return untyped knownPositiveInt;
 	}
