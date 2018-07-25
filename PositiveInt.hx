@@ -30,7 +30,7 @@ abstract PositiveInt (Int) to Int
 			macro {};
 		} else {
 			// trace("Runtime check cast: " + ExprTools.toString(expr));
-			macro if ((n:Int) >= 0) n else throw n + " should be > 0";
+			macro if ((n:Int) >= 0) n else throw n + " should be >= 0";
 		}
 		return macro {
 			var n : PositiveInt = untyped $expr;
